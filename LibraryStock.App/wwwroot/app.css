@@ -1,0 +1,992 @@
+/*  html, body: yüksekliði tam ekran yapar; varsayýlan margin'i sýfýrlar.*/
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+a, .btn-link {
+    color: #006bb7; /* Doygun mavi tonu */
+}
+
+.btn-primary {
+    color: #fff; /* Metin rengi: beyaz */
+    background-color: #1b6ec2;
+    border-color: #1861ac; /* Kenar: daha koyu mavi */
+}
+
+/* kutu gölgesi ekleniyor. */
+
+/* Focus gölgesi */
+.btn:focus,
+.btn:active:focus,
+.btn-link.nav-link:focus,
+.form-control:focus,
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb; /* Ýçte beyaz, dýþta mavi halkalar */
+}
+
+h1:focus {
+    outline: none; /* Tarayýcý odak çerçevesini kaldýr */
+}
+
+/* Form doðrulama geri bildirimi (valid/invalid) */
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050; /* yeþil kontur */
+}
+
+.invalid {
+    outline: 1px solid #e50000; /*  kýrmýzý kontur */
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+/* Error boundary: Hata olursa sadece o bölgeyi yakalayýp güvenle bir uyarý göster. */
+.blazor-error-boundary {
+    background: #b32121; /* kýrmýzý zemin */
+    padding: 1rem 1rem 1rem 1rem; /* Solda ikon alaný için ekstra iç boþluk */
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."; /* Kullanýcýya kýsa hata uyarýsý */
+    }
+
+/* Checkbox kenarlýðý */
+.darker-border-checkbox.form-check-input {
+    border-color: #929292; /* Orta gri */
+}
+
+.login-card .form-label {
+    font-weight: 600;
+    margin-bottom: .3rem;
+}
+
+.login-card .form-control {
+    border-radius: .5rem;
+    padding: .75rem;
+}
+
+.login-card .btn-primary {
+    width: 100%; /* Tam geniþlikte buton */
+    border-radius: .5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: .75rem; /* Týklanabilir alan */
+}
+
+/* Uyarý kutularý */
+.alert {
+    margin-top: 1rem;
+    border-radius: .5rem;
+}
+
+/* Kart giriþinde yumuþak geçiþ efekti*/
+@keyframes popIn {
+    from {
+        transform: translateY(18px) scale(.98); /* Hafif aþaðýda ve küçük baþla */
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1); /* Konum ve ölçekte normal hale gel */
+        opacity: 1;
+    }
+}
+
+/* Nav link durumlarý */
+.nav-group a:hover {
+    background: rgba(255,255,255,.06);
+    color: #fff;
+}
+
+.nav-group a.active {
+    background: #2563eb; /* Aktif mavi zemin */
+    color: #fff;
+}
+
+/* Genel içerik/kart */
+.content {
+    padding: 28px;
+}
+
+.card-surface {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px; /* Ýç boþluk */
+    box-shadow: 0 18px 50px rgba(0,0,0,.2), 0 6px 16px rgba(0,0,0,.15);
+    border: 1px solid rgba(0,0,0,.06); /* Ýnce kenar */
+}
+
+/* Sayfa ýzgarasý ve arka plan düzeni */
+.layout {
+    min-height: 100vh; /* Tüm yüksekliði kapla */
+    background: #0f172a;
+}
+
+/* Sayfanýn ana “çerçevesi” */
+.ls-shell {
+    display: grid; /* Ýki kolonlu ýzgara */
+    grid-template-columns: 260px 1fr; /* Sol: sidebar, Sað: içerik */
+    min-height: 100vh;
+}
+
+.ls-sidebar {
+    background: linear-gradient(180deg,#0b132b 0%,#0f172a 100%); /* Dikey koyu renk geçiþi */
+    border-right: 1px solid rgba(255,255,255,.07); /* Ýnce sað sýnýr */
+    padding: 18px 14px;
+}
+
+/* logo alaný */
+.ls-brand {
+    display: block; /* týklanabilir alan geniþler */
+    color: #e2e8f0;
+    font-weight: 700;
+    letter-spacing: .3px; /* Hafif aralýk */
+    text-decoration: none; /* Alt çizgiyi kaldýr */
+    margin-bottom: 14px;
+}
+
+    .ls-brand i {
+        margin-right: .5rem; /* Ýkon ile metin arasý boþluk */
+    }
+
+.ls-nav {
+    display: flex; /* Dikey istif için */
+    flex-direction: column; /* Menü öðelerini üst üste diz */
+    gap: 6px; /* Öðeler arasý boþluk */
+}
+
+.home-header {
+    margin-bottom: 2rem;
+    color: #f8fafc;
+}
+
+    .home-header h1 {
+        font-weight: 700;
+        font-size: 2rem;
+    }
+
+    .home-header .lead {
+        color: #cbd5e1; /* Ýkincil ton */
+        margin-top: .25rem; /* Baþlýktan sonra boþluk */
+    }
+
+.home-grid {
+    display: grid; /* Kart düzeni */
+    gap: 1.5rem; /* Kartlar arasý boþluk */
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* Kapsayýcýya sýðdýðý kadar sütun otomatik oluþtur. */
+}
+
+.home-card {
+    background: #ffffffcc;
+    backdrop-filter: blur(6px); /* Arkaplaný bulanýklaþtýr (destekleyen tarayýcýlar) */
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    border: 1px solid rgba(255,255,255,.25); /* Ýnce beyaz sýnýr */
+    transition: transform .2s ease, box-shadow .2s ease; /* fare üzerine geldiðinde animasyon */
+}
+
+    .home-card:hover {
+        transform: translateY(-4px); /* Hover'da hafif yukarý kalk */
+        box-shadow: 0 18px 40px rgba(0,0,0,.25);
+    }
+
+    .home-card i {
+        font-size: 2.2rem;
+        color: #2563eb;
+        margin-bottom: .75rem;
+    }
+
+    .home-card h3 {
+        margin-bottom: .5rem;
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .home-card p {
+        color: #334155;
+        font-size: .95rem;
+        margin-bottom: 1rem;
+    }
+
+/* sayýsal bloklar */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Esnek kolonlar */
+    gap: 1.5rem; /* Kartlar arasý boþluk */
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: #ffffffcc;
+    backdrop-filter: blur(4px);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,.15);
+    transition: transform .2s ease; /* fare üzerine geldiðinde animasyon */
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,.12);
+   
+}
+
+.stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(255,255,255,.08);
+}
+
+.stat-label {
+    font-size: .9rem;
+    opacity: .8;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+    .stat-card:hover {
+        transform: translateY(-4px); /* Hover kalkýþý */
+    }
+
+    .stat-card h2 {
+        font-size: 2rem;
+        margin: 0;
+        font-weight: 700;
+        color: #1e293b; /* Koyu mavi-gri */
+    }
+
+    .stat-card p {
+        margin: .25rem 0 0;
+        color: #475569;
+        font-size: .9rem; /* Küçük açýklama */
+    }
+
+    .stat-card.critical {
+        border: 2px solid #ef4444; /* Kritik uyarý: kýrmýzý çerçeve */
+    }
+
+/* Paneller */
+.admin-panel, .personel-panel {
+    background: #1e293b;
+    color: #f1f5f9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+
+.hero {
+    margin-bottom: 22px; /* Baþlýk alaný alt boþluk */
+    color: #f8fafc; /* Açýk metin */
+}
+
+    .hero h1 {
+        font-size: 26px;
+        font-weight: 800;
+        margin: 0;
+    }
+
+    .hero .sub {
+        color: #cbd5e1;
+        margin-top: 4px; /* Baþlýktan boþluk */
+    }
+
+/* araç çubuðu */
+.toolbar {
+    display: flex; /* Yatay dizilim */
+    gap: .75rem; /* Öðeler arasý boþluk */
+    flex-wrap: wrap; /* Küçük ekranlarda alt satýra geç */
+    margin-bottom: 16px;
+}
+
+/* Küçük bilgi etiketi */
+.chip {
+    background: #0b132b;
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,.1); /* Ýnce çizgi */
+    border-radius: 999px;
+    padding: 8px 12px;
+    display: inline-flex; /* Ýçerik hizalama */
+    align-items: center;
+    gap: .5rem; /* Ýkon-metin aralýðý */
+}
+
+    .chip i {
+        font-size: 1rem; /* Ýkon boyutu */
+    }
+
+/* KPI: Küçük kartçýklar ýzgarasý */
+.kpi {
+    display: grid; /* Izgara düzeni */
+    grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); /* Esnek */
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+    .kpi .tile {
+        background: #ffffffcc;
+        backdrop-filter: blur(6px);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 10px 26px rgba(0,0,0,.18);
+        border: 1px solid rgba(0,0,0,.06);
+        transition: transform .18s ease; /* fare üzerine geldiðinde animasyon */
+    }
+
+        .kpi .tile:hover {
+            transform: translateY(-3px); /* kalkma efekti */
+        }
+
+    .kpi h3 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .kpi p {
+        margin: 2px 0 0;
+        color: #475569;
+    }
+
+/* Tablo genel (diðer sayfalar için) */
+.table-wrap {
+    background: #ffffffcc;
+    backdrop-filter: blur(6px);
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 18px 40px rgba(0,0,0,.22);
+    overflow: hidden; /* Köþe dýþýna taþmalarý kes */
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse; /* Hücre kenarlarýný birleþtir */
+}
+
+    .table th, .table td {
+        padding: 12px 14px;
+    }
+
+    .table thead th {
+        background: #0f172a;
+        color: #e2e8f0;
+        font-weight: 600;
+        letter-spacing: .2px;
+        text-align: left;
+    }
+
+    .table tbody tr {
+        transition: background .12s ease, transform .12s ease; /* fare üzerine geldiðinde animasyon  */
+    }
+
+        .table tbody tr:hover {
+            background: #f8fafc; /* animasyon arka planý */
+        }
+
+/* Rozetler */
+.badge {
+    font-size: .75rem;
+    padding: 6px 10px;
+    border-radius: 999px; /* Tam kapsül */
+    display: inline-block; /* Satýr içi blok */
+}
+
+    .badge.admin {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .badge.personel {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .badge.low {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .badge.ok {
+        background: #e0e7ff;
+        color: #4338ca;
+    }
+
+/* yükleniyor efekti */
+.skel-row {
+    height: 42px;
+    position: relative; /* Pseudo-element konumlandýrma için */
+    overflow: hidden;
+}
+
+    .skel-row::before {
+        content: ""; /* Arka blok */
+        position: absolute;
+        inset: 8px 14px; /* Ýçten boþluklu þerit */
+        border-radius: 10px;
+        background: #e5e7eb;
+    }
+
+    .skel-row::after {
+        content: ""; /* Parýltý animasyonu */
+        position: absolute;
+        inset: 8px 14px; /* Ayný boyut */
+        border-radius: 10px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent); /* Iþýltý */
+        animation: shimmer 1.1s infinite; /* Sürekli kaydýr */
+    }
+
+@keyframes shimmer {
+    from {
+        transform: translateX(-100%); /* Soldan baþla */
+    }
+
+    to {
+        transform: translateX(100%); /* Saða doðru kay */
+    }
+}
+
+.login-hero {
+    min-height: 100vh;
+    margin: 0; /* Kenar boþluðu yok */
+    padding: 32px 16px;
+    display: grid;
+    place-items: center; /* Dikey+Yatay merkezleme */
+    background: radial-gradient(1200px 600px at 0% -10%, #1e293b 0%, transparent 60%), radial-gradient(900px 500px at 100% 0%, #0b132b 0%, transparent 60%), linear-gradient(145deg, #0b132b 0%, #0f172a 100%);
+    position: relative; /* daireleri konumlandýrmak için referans */
+    overflow: hidden;
+}
+
+.login-blob {
+    width: 360px;
+    height: 360px;
+    background: #2563eb;
+    top: 10%;
+    left: 8%;
+    position: absolute; /* serbest konum */
+    filter: blur(40px); /* Daðýnýk yumuþak ýþýk */
+    opacity: .35;
+    border-radius: 50%; /* Daire þekli */
+    animation: float 2s ease-in-out infinite; /* Yukarý-aþaðý salýným */
+}
+
+.login-blob2 {
+    width: 420px;
+    height: 420px;
+    background: #22c55e;
+    bottom: -4%;
+    right: -4%;
+    animation-delay: .2s; /* Salýným farký */
+    position: absolute; /*  serbest konum */
+    filter: blur(40px); /* Daðýnýk yumuþak ýþýk */
+    opacity: .35;
+    border-radius: 50%;
+    animation: float 2s ease-in-out infinite;
+}
+
+/* öðeyi yukarý-aþaðý salýndýran animasyonun tarifi */
+@keyframes float {
+    0%,100% {
+        transform: translateY(0) /* Baþlangýç/bitis konumu */
+    }
+
+    50% {
+        transform: translateY(-14px) /* Ortada yukarý çýk */
+    }
+}
+
+.login-card {
+    width: 100%;
+    max-width: 460px;
+    background: rgba(255,255,255,.9);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 20px;
+    padding: 28px 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.35), 0 10px 24px rgba(0,0,0,.20);
+    animation: popIn .45s cubic-bezier(.18,.89,.32,1.28);
+}
+
+.login-title {
+    display: flex; /* Ýkon + metni hizala */
+    align-items: center; /* Dikey ortalama */
+    gap: .6rem;
+    font-weight: 800;
+    font-size: 24px;
+    color: #0f172a;
+    margin: 0 0 6px;
+}
+
+.login-sub {
+    color: #475569;
+    margin-bottom: 18px;
+}
+
+/* input + göz butonu birlikte */
+.input-wrap {
+    position: relative;
+}
+
+    .input-wrap .form-control {
+        border-radius: 12px;
+        padding: .75rem .9rem;
+        padding-right: 44px;
+        position: relative;
+        z-index: 1; /* Butonun altýna düþmesin */
+    }
+
+    .input-wrap .toggle-password {
+        position: absolute; /* Input içine yerleþtir */
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%); /* Gerçek merkezleme */
+        width: 32px;
+        height: 32px;
+        display: grid; /* Ýkonu ortala */
+        place-items: center;
+        background: none;
+        border: 0;
+        cursor: pointer; /* El imleci */
+        color: #475569;
+        z-index: 10000; /* Üstte tut */
+        pointer-events: auto; /* Týklamayý engelleme */
+    }
+
+        .input-wrap .toggle-password:focus {
+            outline: none; /* Odak çerçevesini gizle */
+        }
+
+/* Sidebar renk temasý (NavMenu) */
+:root {
+    --side-bg: #0b1220; /* Arka plan */
+    --side-line: rgba(255,255,255,.08);
+    --side-text: #a8b3cf;
+    --side-text-strong: #e6ecff; /* Vurgulu metin */
+    --side-hover: #1b2437; /*  fare üzerine geldiðinde animasyon */
+    --side-active: #2563eb; /* Aktif öðe arka planý */
+}
+
+.side {
+    background: var(--side-bg); /* Deðiþkenden al */
+    border-right: 1px solid var(--side-line);
+    height: 100vh;
+    padding: 18px 14px;
+    position: sticky; /* Scroll ile sabitle */
+    top: 0;
+}
+
+.side-brand {
+    display: block; /* Tam satýr týklanabilir */
+    color: var(--side-text-strong);
+    font-weight: 800;
+    letter-spacing: .2px; /* Harf aralýðý */
+    text-decoration: none;
+    margin: 2px 0 14px;
+    font-size: 15.5px;
+}
+
+    .side-brand i {
+        margin-right: .5rem; /* Ýkon/metin arasý */
+    }
+
+.side-list {
+    list-style: none; /* Madde iþaretlerini kaldýr */
+    margin: 0;
+    padding: 0;
+}
+
+.side-sep {
+    height: 10px;
+    border-bottom: 1px solid var(--side-line);
+    margin: 10px 0;
+}
+
+.side-link {
+    display: flex; /* Ýkon + metin hizasý */
+    align-items: center;
+    gap: .65rem;
+    color: var(--side-text); /* Normal metin */
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 10px;
+    transition: background .12s ease, color .12s ease, transform .12s ease; /*  fare üzerine geldiðinde animasyon akýcýlýðý */
+}
+
+    .side-link i {
+        font-size: 1.05rem;
+        opacity: .9;
+    }
+
+    .side-link:hover {
+        background: var(--side-hover);
+        color: var(--side-text-strong);
+        transform: translateX(2px);
+    }
+
+    .side-link.active {
+        background: var(--side-active);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(37,99,235,.35);
+    }
+
+/* Overlay'ler týklamayý yutmasýn */
+.login-blob, .login-blob2, .login-hero::after, .login-card::after {
+    pointer-events: none; /* Fare olaylarýný geçirme */
+}
+
+.login-card {
+    position: relative;
+    z-index: 1; /* Üst katman */
+}
+
+/* Tekrar eden yardýmcý */
+.input-wrap {
+    position: relative; /* Toggle konumlandýrma için */
+}
+
+    .input-wrap .form-control {
+        padding-right: 44px; /* Saðda ikon için yer */
+    }
+
+.toggle-password {
+    position: absolute; /* Input içinde saða sabitle */
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    width: 36px;
+    height: 36px;
+    display: flex; /* Ýkon hizalama */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer; /* El imleci */
+    z-index: 3; /* Üstte tut */
+    pointer-events: auto; /* Týklama açýk */
+}
+
+.ls-card .users-screen {
+    background: #ffffffcc;
+    backdrop-filter: blur(6px);
+    color: #0f172a;
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.22);
+    border: 1px solid rgba(0,0,0,.06);
+    padding: .5rem .5rem .75rem .5rem;
+}
+
+    /* Tablo baþlýklarý */
+    .ls-card .users-screen .table thead th {
+        background: #f6f7fb;
+        color: #0f172a;
+        font-weight: 600;
+        border-bottom: 1px solid #e5e7eb; /* Ayýrýcý çizgi */
+    }
+
+    /* Hücreler */
+    .ls-card .users-screen .table th, .ls-card .users-screen .table td {
+        color: #111827;
+        border-color: #e5e7eb;
+        vertical-align: middle; /* Ýçeriði ortala (dikey) */
+    }
+
+    /* Zebra + Hover (Zebra = kalýcý alternasyon, hover = anlýk vurgulama)*/
+    .ls-card .users-screen .table tbody tr:nth-child(odd) {
+        background: #ffffff; /* Beyaz satýr */
+    }
+
+    .ls-card .users-screen .table tbody tr:nth-child(even) {
+        background: #f9fafb; /* Çok açýk gri satýr */
+    }
+
+    .ls-card .users-screen .table tbody tr:hover {
+        background: #eef2ff; /* Hover: açýk indigo */
+    }
+
+    /* Ýþlem sütunu tek satýr */
+    .ls-card .users-screen .table .text-end {
+        white-space: nowrap; /* Butonlar satýr kýrmasýn */
+    }
+
+.text-muted {
+    color: #6b7280 !important; /* Orta gri, öncelik yüksek */
+}
+
+/* Buton kontrastlarý (genel) */
+.btn-outline-primary {
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+    .btn-outline-primary:hover {
+        background: #3b82f6;
+        color: #ffffff;
+    }
+
+.btn-outline-danger {
+    border-color: #ef4444;
+    color: #b91c1c;
+}
+
+    .btn-outline-danger:hover {
+        background: #ef4444;
+        color: #ffffff;
+    }
+
+/* Personel Yönetimi baþlýðý */
+.ls-card > h3 {
+    color: #f8fafc;
+    font-weight: 800;
+    margin: 0 0 12px;
+}
+
+/* Auth yardýmcý link alaný (örn. "Þifremi unuttum?") Link alaný: saða hizalý ve butondan uzak */
+.auth-helper {
+    display: flex; /* Yatay hizalama */
+    justify-content: flex-end;
+    margin-bottom: 12px; /* Giriþ butonundan boþluk */
+}
+
+/* Link stili */
+.auth-forgot {
+    display: inline-block; /* margin çalýþsýn */
+    font-size: .95rem;
+    color: #6c757d;
+    text-decoration: none;
+}
+
+    .auth-forgot:hover {
+        color: #0d6efd;
+        text-decoration: underline;
+    }
+
+/* Butonu üstten biraz aþaðý indir (bootstrap ezebilir diye) */
+.login-card .btn-primary {
+    margin-top: 6px !important; /* Özel öncelik */
+}
+
+/*  Forgot Password sayfasý  */
+.forgot-screen {
+    min-height: calc(100vh - 120px); /* layout içinde ortalamak için */
+    display: grid;
+    place-items: center;
+    padding: 24px 16px;
+}
+
+.forgot-card {
+    width: 100%;
+    max-width: 520px;
+    background: #ffffffee;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 36px;
+    padding: 58px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.25);
+}
+
+.forgot-title {
+    display: flex; /* Ýkon + baþlýk hizasý */
+    align-items: center; /* Dikey ortalama */
+    gap: .5rem;
+    font-weight: 800;
+    font-size: 20px;
+    color: #0f172a;
+    margin: 0 0 12px;
+}
+
+/* Stoklar ekraný tablo þablonlarý */
+.ls-card .stoklar-screen .table thead th {
+    background: #f6f7fb;
+    color: #0f172a;
+}
+
+.ls-card .stoklar-screen .table tbody tr:nth-child(odd) {
+    background: #fff;
+}
+
+.ls-card .stoklar-screen .table tbody tr:nth-child(even) {
+    background: #f9fafb;
+}
+
+.ls-card .stoklar-screen .table tbody tr:hover {
+    background: #eef2ff;
+}
+
+/* ========== Sipariþ Sayfasý (yüksek kontrast / dark uyumlu) ========== */
+
+/* Koyu sayfa tipografi */
+.page-dark, .page-dark p, .page-dark li, .page-dark span {
+    color: #e5e7eb;
+}
+
+    .page-dark h1, .page-dark h2, .page-dark h3 {
+        color: #f8fafc;
+        font-weight: 800;
+    }
+
+    .page-dark .form-label {
+        color: #cbd5e1;
+    }
+
+    .page-dark .text-muted {
+        color: #cbd5e1 !important;
+        opacity: 1 !important;
+    }
+
+    .page-dark .form-control {
+        background: #fff;
+        color: #0f172a;
+        border-color: #334155;
+    }
+
+/* Bilgi þeridi */
+.rulebar {
+    border-radius: 12px;
+    padding: .75rem 1rem;
+    border: 1px solid rgba(255,255,255,.08);
+    color: #e5e7eb;
+}
+
+    .rulebar.is-danger {
+        background: #3a0e14;
+        border-color: #fca5a5;
+    }
+
+    .rulebar.is-ok {
+        background: #102a15;
+        border-color: #86efac;
+    }
+
+/* Rulebar chip'leri */
+.rb-chip {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: .85rem;
+}
+
+    .rb-chip.blue {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .rb-chip.gray {
+        background: #334155;
+        color: #e5e7eb;
+    }
+
+/* Tablo: beyaz kart */
+.table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18);
+    border: 1px solid #e5e7eb;
+}
+
+    .table-wrap .table thead th {
+        background: #f6f7fb;
+        color: #0f172a;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .table-wrap .table td, .table-wrap .table th {
+        color: #0f172a;
+        border-color: #e5e7eb;
+        vertical-align: middle;
+    }
+
+    .table-wrap .table tbody tr:nth-child(odd) {
+        background: #fff;
+    }
+
+    .table-wrap .table tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+
+    .table-wrap .table tbody tr:hover {
+        background: #eef2ff;
+    }
+
+    .table-wrap .table tr.table-primary td {
+        background: #dbeafe !important;
+    }
+
+/* Kritik satýr vurgusu + rozetler */
+.row-critical td {
+    background: #fff1f2 !important;
+}
+
+.chip-critical {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+.chip-normal {
+    background: #e5e7eb;
+    color: #334155;
+    border-radius: 999px;
+    padding: 4px 8px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+/* Disabled görünümü belirginleþtir */
+.btn[disabled] {
+    opacity: .6;
+    cursor: not-allowed;
+}
+
+/* ===== CHIP KONTRAST FIX ===== */
+.table-wrap .chip-critical {
+    background: #ef4444 !important; /* canlý kýrmýzý */
+    color: #ffffff !important; /* beyaz metin */
+    border: 1px solid #b91c1c !important;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: .80rem;
+    font-weight: 800;
+    letter-spacing: .1px;
+}
+
+.table-wrap .chip-normal {
+    background: #e2e8f0 !important; /* açýk gri */
+    color: #0f172a !important; /* koyu metin */
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: .80rem;
+    font-weight: 700;
+}
+
+/* Kritik satýr vurgusu daha açýk; chip öne çýksýn */
+.table-wrap .row-critical td {
+    background: #fff5f5 !important; /* çok açýk pembe */
+}
+
+
+
+
+

@@ -1,0 +1,77 @@
+﻿@* Bu sayfa: Uygulamada bir hata olduğunda gösterilen "Hata" ekranıdır. *@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+
+<h1 class="text-danger">Error.</h1>
+<h2 class="text-danger">Talebiniz işlenirken bir hata oluştu.</h2>
+
+
+@if (ShowRequestId)
+{
+    <p>
+        <strong>Request ID:</strong> <code>@RequestId</code>
+    </p>
+}
+
+<h3>Development Mode</h3>
+<p>
+    Geliştirme ortamına geçildiğinde oluşan hata hakkında daha detaylı bilgi görüntülenecektir.
+</p>
+
+<p>
+    Geliştirme ortamı, dağıtılan uygulamalar için etkinleştirilmemelidir.
+    Bu, istisnalardan hassas bilgilerin son kullanıcılara gösterilmesine neden olabilir.
+    Yerel hata ayıklama için, ASPNETCORE_ENVIRONMENT ortam değişkenini Geliştirme olarak ayarlayıp uygulamayı yeniden başlatarak Geliştirme ortamını etkinleştirin.
+</p>
+
+@code {
+    
+
+    // HttpContext: Bu sayfayı açan isteğe dair bilgiler (sunucu tarafında).
+    // "CascadingParameter": Bu bilgiyi üst taraftan otomatik alıyoruz (elle vermiyoruz).
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+
+   
+    private bool ShowRequestId
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(RequestId))
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+    }
+
+    // Sayfa ilk açıldığında yapılacak iş: RequestId'yi doldurmaya çalış.
+   
+    protected override void OnInitialized()
+    {
+        // Önce Activity.Current.Id varsa onu al(Activity.Current.Id = Eğer sistemde bir “aktif işlem (trace)” varsa, onun kimliği.)
+        if (Activity.Current != null && Activity.Current.Id != null && Activity.Current.Id != string.Empty)
+        {
+            RequestId = Activity.Current.Id;
+        }
+        // Yoksa HttpContext.TraceIdentifier varsa onu al(HttpContext.TraceIdentifier = ASP.NET Core’un her HTTP isteğine otomatik verdiği ID. (garanti var))
+        else if (HttpContext != null && HttpContext.TraceIdentifier != null && HttpContext.TraceIdentifier != string.Empty)
+        {
+            RequestId = HttpContext.TraceIdentifier;
+        }
+        // İkisi de yoksa null bırak
+        else
+        {
+            RequestId = null;
+        }
+    }
+
+}

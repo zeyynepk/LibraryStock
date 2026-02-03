@@ -1,0 +1,27 @@
+﻿@page "/logout"
+@rendermode InteractiveServer
+@* IAuthService: Uygulamanın kimlik doğrulama servisidir.*@
+@inject LibraryStock.App.Services.IAuthService Auth
+
+@* NavigationManager: Blazor içinde istemci tarafı yönlendirme yapmamızı sağlar.*@
+@inject NavigationManager Nav
+
+<p>Oturum kapatılıyor...</p>
+
+@code {
+    /*
+      "override"?
+      OnInitializedAsync, Blazor bileşenlerinin taban sınıfı (ComponentBase) tanımlı Biz de bu sanal metodu eziyoruz(override)
+        "Bu bileşen ilk oluşturulurken ne yapılsın?" sorusunun cevabını, kendi versiyonumuzla veriyoruz.
+      "async"?
+      - Oturum kapatma I/O içerir  ve asenkron çalışır. 
+      - "await" sayesinde: SignOut işlemi bitmeden NavigateTo çağrılmaz UI donmaz; Blazor render döngüsü akıcı kalır
+    */
+    protected override async Task OnInitializedAsync()
+    {
+        // Asenkron: Oturumu kapat ve tamamlanmasını bekle (await) 
+        await Auth.SignOutAsync(); 
+        Nav.NavigateTo("/");
+    }
+}
+

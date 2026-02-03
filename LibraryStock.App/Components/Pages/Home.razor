@@ -1,0 +1,137 @@
+﻿@page "/home"
+@using Microsoft.AspNetCore.Components.Authorization
+@using LibraryStock.App.Clean.Services
+@using LibraryStock.App.Services
+@using System.Net.Http.Json
+@inject IStokService StokService
+@inject IOrdersService Orders
+@inject HttpClient Http
+@inject NavigationManager Nav
+
+<AuthorizeView>
+    <Authorized>
+        <div class="home-header fade-in-up">
+            <h1>👋 Hoş geldin, @context.User.Identity?.Name!</h1>
+            <p class="lead">Genel duruma hızlıca göz atabilirsin.</p>
+        </div>
+
+        @if (context.User.IsInRole("Admin"))
+        {
+            <div class="stats-grid fade-in-up">
+                <div class="stat-card">
+                    <h2>@personnelCount</h2>
+                    <p>Toplam Kullanıcı</p>
+                </div>
+                <div class="stat-card critical">
+                    <h2>@criticalCount</h2>
+                    <p>Kritik Stok</p>
+                </div>
+                <div class="stat-card">
+                    <h2>@waitingOrders</h2>
+                    <p>Bekleyen Sipariş</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="stats-grid fade-in-up">
+                <div class="stat-card">
+                    <h2>@personnelCount</h2>
+                    <p>Toplam Kullanıcı</p>
+                </div>
+                <div class="stat-card critical">
+                    <h2>@criticalCount</h2>
+                    <p>Kritik Stok</p>
+                </div>
+                <div class="stat-card stok">
+                    <h2>@totalStock</h2>
+                    <p>Toplam Stok</p>
+                </div>
+            </div>
+        }
+
+        @if (context.User.IsInRole("Admin"))
+        {
+            <div class="admin-panel fade-in-up">
+                <h3>📊 Yönetici Paneli</h3>
+                <p>Personel ve stok işlemlerini soldaki menüden yönetebilirsin.</p>
+            </div>
+        }
+
+        @if (context.User.IsInRole("Personel"))
+        {
+            <div class="personel-panel fade-in-up">
+                <h3>🛒 Sipariş Paneli</h3>
+                <p>Yeni sipariş oluşturabilir ve mevcut personelleri / stokları görüntüleyebilirsin.</p>
+            </div>
+        }
+    </Authorized>
+
+    <NotAuthorized>
+        <p>Lütfen giriş yapın.</p>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private int personnelCount = 0;  // Toplam kullanıcı sayısı (Admin + Personel)
+    private int criticalCount = 0;  // Kritik stok adedi
+    private int waitingOrders = 0;  // Bekleyen sipariş sayısı
+    private int totalStock = 0;  // Toplam stok adedi
+
+    // Tüm kullanıcılar (role parametresi yok)
+    private const string PersonnelCountUrl = "/api/users/count";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Kritik stok sayısı
+        var critical = await StokService.GetCriticalAsync();
+        if (critical == null)
+        {
+            criticalCount = 0;
+        }
+        else
+        {
+            criticalCount = critical.Count;
+        }
+
+        // Bekleyen sipariş sayısı
+        waitingOrders = await Orders.CountWaitingAsync();
+
+        // Toplam stok sayısı
+        var all = await StokService.GetForOrder_AdminAsync();
+        if (all == null)
+        {
+            totalStock = 0;
+        }
+        else
+        {
+            totalStock = all.Count;
+        }
+
+        // Toplam kullanıcı sayısı (API)
+        await LoadPersonnelCount();
+    }
+
+    // Toplam kullanıcı sayısını API'den getir
+    private async Task LoadPersonnelCount()
+    {
+        try
+        {
+            var uri = Nav.ToAbsoluteUri(PersonnelCountUrl); // host/port otomatik
+            var sayi = await Http.GetFromJsonAsync<int>(uri);
+
+            if (sayi >= 0)
+            {
+                personnelCount = sayi;
+            }
+            else
+            {
+                personnelCount = 0;
+            }
+        }
+        catch
+        {
+            personnelCount = 0;
+        }
+    }
+}

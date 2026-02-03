@@ -1,0 +1,103 @@
+﻿@page "/stokgoruntule"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,Personel")]
+@using Microsoft.AspNetCore.Components.Web
+@using LibraryStock.App.Models
+@using LibraryStock.App.Clean.Services
+@inject IStokService StokService
+@inject LibraryStock.App.Services.IAuthService Auth
+
+<h3>📦 Stok Görüntüleme</h3>
+
+<div class="stoklar-screen users-screen">
+    <div class="d-flex gap-2 mb-3" style="max-width:560px;">
+        <input class="form-control"
+               @bind="query" @bind:event="oninput"
+               @onkeydown="OnKeyDown"
+               placeholder="Ara: ürün adı / ID / kategori ID..." />
+        <button class="btn btn-primary" @onclick="Search">Ara</button>
+        <button class="btn btn-outline-secondary" @onclick="Clear" disabled="@string.IsNullOrWhiteSpace(query)">Temizle</button>
+        <div class="ms-auto small text-muted align-self-center">
+            @(loading ? "Yükleniyor..." : $"{items.Count} kayıt")
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <p>Yükleniyor...</p>
+    }
+    else if (items is null || items.Count == 0)
+    {
+        <p>Kayıt bulunamadı.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th style="width:80px;">Stok ID</th>
+                        <th style="width:80px;">Ürün Adı</th>
+                        <th style="width:120px;">Adet</th>
+                        <th style="width:120px;" >Min. Değer</th>
+                        <th style="width:120px;">Kategori ID</th>
+                        <th style="width:80px;">Oluşturan User ID</th>
+                        <th style="width:140px;">Oluşturma</th>
+                        <th style="width:140px;">Güncelleme</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in items)
+                    {
+                        <tr class="@(s.IsCritical ? "table-danger" : null)">
+                            <td>@s.Id</td>
+                            <td>@s.ItemName</td>
+                            <td>@s.Quantity</td>
+                            <td>@s.MinValue</td>
+                            <td>@s.CategoryID</td>
+                            <td>@s.OlusturanUserID</td>
+                            <td>@s.AddedDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@(s.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private string query = string.Empty;
+    private bool loading = true;
+    private List<Stok> items = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        StateHasChanged();
+
+        var q = (query ?? string.Empty).Trim();
+        items = await StokService.GetAsync(q);
+
+        loading = false;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await Load();
+    }
+
+    private Task Search() => Load();
+
+    private async Task Clear()
+    {
+        query = string.Empty;
+        await Load();
+    }
+}

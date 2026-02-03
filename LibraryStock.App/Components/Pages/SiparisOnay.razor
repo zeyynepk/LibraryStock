@@ -1,0 +1,314 @@
+﻿@page "/siparisonay"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Forms        
+@using LibraryStock.App.Models
+@using LibraryStock.App.Clean.Services              
+@using LibraryStock.App.Services                   
+
+@inject IOrdersService Orders
+@inject IStokService StokService
+@inject AuthenticationStateProvider AuthState
+
+@if (loading)
+{
+    <p>Yükleniyor…</p>
+}
+else
+{
+    <div class="page-dark">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <h3 class="mb-0"><i class="bi bi-check2-square"></i>Sipariş Onayla</h3>
+        </div>
+
+        <div class="rulebar mb-3">
+            <span class="rb-chip blue">Bekleyen: @waitingOrdersCount</span>
+            @if(waitingOrders is null || waitingOrders.Count == 0)
+            {
+                <div class="alert alert-info">Bekleyen sipariş yok</div>
+            }
+            else
+            {
+                <div class="table-wrap table-responsive mt-3">
+                    <table class="table table-hover table-sm align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width:70px;">Seç</th>
+                                <th style="width:70px;">Sipariş ID</th>
+                                <th style="width:90px;">Ürün ID</th>
+                                <th style="width:90px;">Ürün</th>
+                                <th style="width:110px;">Mevcut</th>
+                                <th style="width:110px;">Sipariş</th>
+                                <th style="width:110px;">Sonraki</th>
+                                <th style="width:110px;">Min</th>
+                                <th style="width:150px;">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <InputRadioGroup @bind-Value="selectedOrderId">
+                                @foreach(var o in waitingOrders)
+                                {
+                                    var s = FindStock(o.ItemId);
+                                    int mevcut = 0;
+                                    int min = 0;
+                                    string ad = "(Ürün bulunamadı)";
+                                    int sonraki = 0;
+                                    bool kritikSimdi = false;
+                                    bool kritikSonra = false;
+
+                                    if(s is not null)
+                                    {
+                                        mevcut = s.Quantity;
+                                        min = s.MinValue;
+                                        ad = s.ItemName;
+                                        sonraki = mevcut + o.Quantity;
+
+                                        if(mevcut <= min)
+                                        {
+                                            kritikSimdi = true;
+                                        }
+                                        if (sonraki <= min)
+                                        {
+                                            kritikSonra = true;
+                                        }
+                                    }
+
+                                    var rowClass = "";
+
+                                    if (kritikSimdi)
+                                    {
+                                        rowClass = "row-critical"; 
+                                    }
+
+                                    <tr class="@rowClass">
+                                        <td>
+                                            <InputRadio Value="@o.Id" />
+                                        </td>
+                                        <td>@o.Id</td>
+                                        <td>@o.ItemId</td>
+                                        <td>@ad</td>
+                                        <td>@mevcut</td>
+                                        <td>@o.Quantity</td>
+                                        <td>@sonraki</td>
+                                        <td>@min</td>
+                                        <td>
+                                            @if (kritikSimdi)
+                                            {
+                                                if (kritikSonra)
+                                                {
+                                                    <span class="chip-critical">Kritik kalacak</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="chip-normal">Kritikten çıkacak</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="chip-normal">Normal</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </InputRadioGroup>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-success" disabled ="@IsApproveDisabled()" @onclick="ApproveSelected">Onayla</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code{
+    private bool loading = true;
+    private int currentUserId = 0;
+    private int selectedOrderId = 0;
+    private List<Siparis>? waitingOrders;
+    private int waitingOrdersCount = 0;
+    private List<Stok>? allStocks;
+    private Dictionary<int, Stok> stockById = new Dictionary<int, Stok>();
+    private bool busy = false;
+    private string? info;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        var user = auth.User;
+        var idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var parsed = 0;
+
+        if (int.TryParse(idStr, out parsed))
+        {
+            currentUserId = parsed;
+        }
+        else
+        {
+            currentUserId = 0;
+        }
+
+        waitingOrders = await Orders.GetWaitingAsync();
+
+        if (waitingOrders is null)
+        {
+            waitingOrders = new List<Siparis>();
+        }
+
+        waitingOrdersCount = waitingOrders.Count;
+
+        allStocks = await StokService.GetForOrder_AdminAsync();
+
+        if (allStocks is null)
+        {
+            allStocks = new List<Stok>();
+        }
+
+        stockById.Clear();
+
+        var i = 0;
+        while (i < allStocks.Count)
+        {
+            var s = allStocks[i];
+            if (!stockById.ContainsKey(s.Id))
+            {
+                stockById.Add(s.Id, s);
+            }
+            i = i + 1;
+        }
+
+        loading = false;
+    }
+
+    private Stok? FindStock(int itemId)
+    {
+        if (stockById.ContainsKey(itemId))
+        {
+            return stockById[itemId];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private bool IsApproveDisabled()
+    {
+        if (busy)
+        {
+            return true;
+        }
+        if (selectedOrderId <= 0)
+        {
+            return true;
+        }
+        // Seçili sipariş ve stok var mı?
+        var o = GetOrder(selectedOrderId);
+        if (o is null)
+        {
+            return true;
+        }
+        var s = FindStock(o.ItemId);
+        if (s is null)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private string ApproveButtonText()
+    {
+        if (busy)
+        {
+            return "Onaylanıyor...";
+        }
+        else
+        {
+            return "Seçili Siparişi Onayla";
+        }
+    }
+
+    private Siparis? GetOrder(int orderId)
+    {
+        if (waitingOrders is null)
+        {
+            return null;
+        }
+
+        var k = 0;
+        while (k < waitingOrders.Count)
+        {
+            if (waitingOrders[k].Id == orderId)
+            {
+                return waitingOrders[k];
+            }
+            k = k + 1;
+        }
+        return null;
+    }
+
+    private async Task ApproveSelected()
+    {
+        if (IsApproveDisabled())
+        {
+            return;
+        }
+
+        var target = GetOrder(selectedOrderId);
+        if (target is null)
+        {
+            info = "Sipariş bulunamadı.";
+            return;
+        }
+
+        try
+        {
+            busy = true;
+            info = null;
+
+            // Servis: Onay + stoğa ekleme
+            await Orders.ApproveAsync(selectedOrderId, currentUserId);
+
+            // UI tarafını güncelle
+            var s = FindStock(target.ItemId);
+            if (s is not null)
+            {
+                s.Quantity = s.Quantity + target.Quantity;
+            }
+
+            // Bekleyen listeden çıkar
+            var idx = -1;
+            var i = 0;
+            while (i < waitingOrders!.Count)
+            {
+                if (waitingOrders[i].Id == selectedOrderId)
+                {
+                    idx = i;
+                    break;
+                }
+                i = i + 1;
+            }
+
+            if (idx >= 0)
+            {
+                waitingOrders.RemoveAt(idx);
+            }
+
+            waitingOrdersCount = waitingOrders.Count;
+            selectedOrderId = 0;
+            info = "Sipariş onaylandı ve stok güncellendi.";
+        }
+        catch (Exception ex)
+        {
+            info = "Onay başarısız: " + ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

@@ -1,0 +1,12 @@
+﻿@* Kullanıcı hangi adrese (URL’e) giderse, hangi sayfanın açılacağını belirleyen kısım. *@
+
+@* “Program” derlemesinde (@page özniteliği olan) bütün sayfaları ara.Adrese uygun olanı bul, ekrana getir. *@
+<Router AppAssembly="typeof(Program).Assembly">
+    @* Eğer o adrese uygun sayfa bulunduysa, içerideki kısım çalışır. *@
+    <Found Context="routeData">
+       @*  Bulduğun sayfayı çiz (render et).
+        Ama eğer sayfanın kendi layout’u yoksa, varsayılan olarak MainLayout kullan. *@
+        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

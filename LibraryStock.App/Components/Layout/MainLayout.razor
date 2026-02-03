@@ -1,0 +1,55 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+
+@* Buradakiler: Sayfanın üst bölümüne (arka plandaki ayarlar) eklenen kısımlar. Stil dosyaları burada eklenir. *@
+<HeadContent>
+    <base href="/" />
+
+    @* Hazır stil dosyası (butonlar, kutular, düzen). *@
+    <link rel="stylesheet" href="/bootstrap/bootstrap.min.css" />
+    @* kendi stil dosyam *@
+    <link rel="stylesheet" href="/app.css?v=2" />
+</HeadContent>
+
+@* Buradan sonrası: Ekranda görünen ana kısım. *@
+<div class="layout">
+    
+    <AuthorizeView>
+
+        <Authorized>
+            @* Dış düzen: Solda menü, sağda içerik. *@
+            <div class="ls-shell">
+
+                @* Sol menü *@
+                <aside class="ls-sidebar slide-in">
+                    @* Uygulama adı/logosu. Tıklayınca /home sayfasına götürür. *@
+                    <a class="ls-brand" href="/home"><i class="bi bi-journal-bookmark"></i> Library Stock 📚</a>
+
+                    @* Soldaki menü butonları/listesi burada çizilir *@
+                    <NavMenu />
+                </aside>
+
+                @* İçerik Alanı *@
+                <main class="ls-main">
+                    <div class="ls-content fade-in-up">
+                        @* ziyaret edilen sayfanın metin/tabloları bunun içinde görünür. *@
+                        <div class="ls-card">
+                            @* Ziyaret ettiğin sayfanın kendi içeriği tam burada görünür. *@
+                            @Body
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </Authorized>
+
+        
+        <NotAuthorized>
+            @* Bu durumda sayfanın kendi içeriği tek başına gösterilir (örnek: Giriş yap ekranı). *@
+            @Body
+        </NotAuthorized>
+
+    </AuthorizeView>
+</div>
+
+

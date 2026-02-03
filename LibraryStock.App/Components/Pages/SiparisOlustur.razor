@@ -1,0 +1,284 @@
+﻿@page "/siparis"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin,Personel")]
+
+@using System.Security.Claims
+@using LibraryStock.App.Models
+@using LibraryStock.App.Clean.Services   
+@using LibraryStock.App.Services         
+
+@inject IStokService StokService
+@inject IOrdersService Orders
+@inject AuthenticationStateProvider AuthState
+
+@if (loading)
+{
+    <p>Yükleniyor…</p>
+}
+else
+{
+    <div class="page-dark">
+
+        <!-- Başlık -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <h3 class="mb-0"><i class="bi bi-bag-plus"></i> Sipariş Oluştur</h3>
+        </div>
+
+        <!-- Bilgi şeridi (sadece sayaçlar, uyarı metni yok) -->
+        <div class="rulebar @(HasCriticalPending ? "is-danger" : "is-ok") mb-3">
+            <span class="rb-chip blue">Kritik: @criticalCount</span>
+            @if (IsAdmin)
+            {
+                <span class="rb-chip gray">Tüm: @allCount</span>
+            }
+            <span class="rb-chip gray">Benim siparişlerim: @myCount</span>
+        </div>
+
+        <!-- LİSTE + SEÇİM + ADET + SİPARİŞ VER -->
+        <div class="row g-3">
+            <div class="col-12">
+                @if (items is null || items.Count == 0)
+                {
+                    <div class="alert alert-info">Listelenecek ürün yok.</div>
+                }
+                else
+                {
+                    <div class="table-wrap table-responsive">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width:80px;">ID</th>
+                                    <th style="width:120px;">Ürün</th>
+                                    <th style="width:120px;">Adet</th>
+                                    <th style="width:120px;">Min</th>
+                                    <th style="width:120px;">Durum</th>
+                                    <th style="width:120px;">Kategori</th>
+                                    <th style="width:120px;">Seç</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in items)
+                                {
+                                    var isCrit = IsCritical(s);
+                                    var disableNonCrit = HasCriticalPending && !isCrit;
+
+                                    <tr class="@RowClass(s)">
+                                        <td>@s.Id</td>
+                                        <td>@s.ItemName</td>
+                                        <td>@s.Quantity</td>
+                                        <td>@s.MinValue</td>
+                                        <td>
+                                            @if (isCrit)
+                                            {
+                                                <span class="chip-critical">Kritik</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="chip-normal">Normal</span>
+                                            }
+                                        </td>
+                                        <td>@s.CategoryID</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm @(selectedItemId == s.Id ? "btn-primary" : "btn-outline-primary")"
+                                                    disabled="@(disableNonCrit)"
+                                                    title="@(disableNonCrit ? "Önce tüm kritik ürünleri sipariş verin" : null)"
+                                                    @onclick="() => SelectItem(s.Id)">
+                                                @(selectedItemId == s.Id ? "Seçildi ✓" : (disableNonCrit ? "Kilitli" : "Seç"))
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <label class="form-label">Seçilen Ürün ID</label>
+                <input class="form-control" value="@selectedItemId" readonly />
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <label class="form-label">Adet</label>
+                <input type="number" class="form-control" min="1" @bind="qty" />
+            </div>
+
+            <div class="col-12 col-lg-4 d-flex align-items-end">
+                <button class="btn btn-success ms-auto"
+                        disabled="@IsSubmitDisabled"
+                        title="@(HasCriticalPending && !IsCriticalSelected() ? "Önce kritik ürün/ürünler seçin" : null)"
+                        @onclick="SubmitOrder">
+                    @(busy ? "Gönderiliyor..." : "Sipariş Ver")
+                </button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(info))
+        {
+            <div class="alert alert-warning mt-3">@info</div>
+        }
+    </div>
+}
+
+@code {
+    // durum
+    private bool loading = true;
+    private bool IsAdmin = false;
+
+    // sayaçlar
+    private int criticalCount = 0;
+    private int allCount = 0;   // sadece Admin
+    private int myCount = 0;
+
+    // liste + seçim
+    private List<Stok>? items;
+    private int selectedItemId = 0;
+    private int qty = 1;
+
+    // UI durumu / mesaj
+    private bool busy = false;
+    private string? info;
+
+    // oturumdaki kullanıcı
+    private int currentUserId = 0;
+
+    // --- OTURUM BAZLI KRİTİK KURAL ---
+    // Sayfa yüklendiğinde kritik ürün ID'leri
+    private HashSet<int> criticalIds = new();
+    // Bu oturumda siparişi verilen kritik ürünler
+    private HashSet<int> criticalOrderedThisSession = new();
+
+    private int CriticalRemaining => criticalIds.Except(criticalOrderedThisSession).Count();
+    private bool HasCriticalPending => CriticalRemaining > 0;
+
+    private bool IsSubmitDisabled =>
+        selectedItemId <= 0 || qty <= 0 || busy
+        || (HasCriticalPending && !IsCriticalSelected());
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 1) Kullanıcı rolü + ID
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        var user = auth.User;
+        IsAdmin = user.IsInRole("Admin");
+        currentUserId = GetUserId(user);
+
+        // 2) Stok listeleri
+        var critical = await StokService.GetCriticalAsync();
+        criticalCount = critical?.Count ?? 0;
+
+        if (IsAdmin)
+        {
+            items = await StokService.GetForOrder_AdminAsync(); // Admin tüm liste
+            allCount = items?.Count ?? 0;
+        }
+        else
+        {
+            items = critical; // Personel kritik ürünler
+        }
+
+        // Sıralama: kritik önce
+        if (items != null) items = items
+            .OrderByDescending(s => IsCritical(s))
+            .ThenBy(s => s.ItemName)
+            .ToList();
+
+        // --- kritik setlerini hazırla (oturum başlangıcı) ---
+        InitializeCriticalSets();
+
+        // 3) Benim sipariş sayım (bilgi amaçlı)
+        if (currentUserId > 0)
+        {
+            var my = await Orders.GetMyAsync(currentUserId);
+            myCount = my?.Count ?? 0;
+        }
+        else
+        {
+            info = "Kullanıcı ID okunamadı (NameIdentifier/uid claim). Çıkış yapıp tekrar giriş yapmayı deneyebilirsin.";
+        }
+
+        loading = false;
+    }
+
+    private void InitializeCriticalSets()
+    {
+        criticalIds = items?.Where(IsCritical).Select(x => x.Id).ToHashSet()
+                      ?? new HashSet<int>();
+        criticalOrderedThisSession.Clear(); // yeni sayfa oturumu
+    }
+
+    private static bool IsCritical(Stok s) => s is not null && s.Quantity <= s.MinValue;
+
+    private string RowClass(Stok s)
+    {
+        var cls1 = selectedItemId == s.Id ? "table-primary" : string.Empty;
+        var cls2 = IsCritical(s) ? "row-critical" : string.Empty;
+        return string.Join(" ", new[] { cls1, cls2 }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private bool IsCriticalSelected()
+    {
+        var sel = items?.FirstOrDefault(i => i.Id == selectedItemId);
+        return sel is not null && IsCritical(sel);
+    }
+
+    private static int GetUserId(ClaimsPrincipal user)
+    {
+        var idStr = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                 ?? user.FindFirst("uid")?.Value;
+        return int.TryParse(idStr, out var id) ? id : 0;
+    }
+
+    private void SelectItem(int id)
+    {
+        var target = items?.FirstOrDefault(x => x.Id == id);
+        if (target is null) return;
+
+        // KURAL: Kritikler tamamlanmadan normal ürün seçilemez (admin için)
+        if (HasCriticalPending && !IsCritical(target)) return;
+
+        selectedItemId = id;
+        if (qty <= 0) qty = 1;
+        info = null;
+    }
+
+    private async Task SubmitOrder()
+    {
+        if (currentUserId <= 0) { info = "Kullanıcı doğrulanamadı."; return; }
+        var selected = items?.FirstOrDefault(i => i.Id == selectedItemId);
+        if (selected is null) { info = "Lütfen ürün seç."; return; }
+
+        // KURAL: Kritikler bitmeden normal sipariş olmaz (admin için)
+        if (HasCriticalPending && !IsCritical(selected))
+        {
+            info = "Önce kritik ürün/ürünler sipariş verin.";
+            return;
+        }
+
+        if (qty <= 0) { info = "Adet en az 1 olmalı."; return; }
+
+        try
+        {
+            busy = true;
+            var newId = await Orders.CreateAsync(selectedItemId, qty, currentUserId);
+
+            // Oturum kuralı: kritikse "verildi" setine ekle
+            if (IsCritical(selected))
+                criticalOrderedThisSession.Add(selectedItemId);
+
+            myCount += 1; // sayaç güncelle
+
+            info = $"Sipariş oluşturuldu (ID: {newId}).";
+            qty = 1; // formu sıfırla
+        }
+        catch (Exception ex)
+        {
+            info = "Sipariş oluşturulamadı: " + ex.Message;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+}

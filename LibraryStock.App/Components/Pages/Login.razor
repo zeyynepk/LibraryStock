@@ -1,0 +1,250 @@
+﻿@rendermode InteractiveServer  
+@page "/"                      
+
+@using Microsoft.EntityFrameworkCore      
+@using LibraryStock.App.Data             
+@using System.Net.Http.Json              
+@inject LibraryStock.App.Services.IAuthService Auth   
+@inject NavigationManager Nav                        
+@inject AppDbContext Db                               
+@inject IHttpContextAccessor Http                      
+@inject AuthenticationStateProvider AuthState          
+@inject Microsoft.JSInterop.IJSRuntime JS             
+
+
+<div class="login-hero">
+    <div class="login-blob"></div>     
+    <div class="login-blob2"></div>
+
+    <div class="login-card">
+        
+        <div class="login-title">📚 Library Stock</div>
+        <div class="login-sub">Hoş geldin! Devam etmek için oturum aç.</div>
+
+        @* Form: model = `model`, gönderim başarılıysa `OnSubmit` çalışır *@
+        <EditForm Model="@model" OnValidSubmit="OnSubmit" FormName="loginForm">
+            @* DataAnnotations (zorunlu, uzunluk vb.) kurallarını devreye alır *@
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            
+            <div class="mb-3">
+                <label class="form-label">Kullanıcı Adı</label>
+                <div class="input-wrap">
+                    @* `@bind-Value="model.UserName"`: kutudaki yazı doğrudan `model.UserName`e akar *@
+                    <InputText class="form-control" @bind-Value="model.UserName" name="UserName" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Şifre</label>
+                <div class="input-wrap">
+                    @* `type="password"`: noktalı yazım. JS'teki düğme bunu geçici olarak "text"e çevirir. *@
+                    <input id="pwBox"
+                           class="form-control"
+                           type="password"
+                           name="Password"
+                           @bind="model.Password"
+                           @bind:event="oninput" />
+                    @* Yanındaki küçük göz butonu: şifreyi göster/gizle , aria-pressed="false" → buton basılı değil*@
+                    <button id="pwToggle" type="button" class="toggle-password" onclick="togglePw()" aria-pressed="false" title="Şifreyi göster/gizle">🙈</button>
+                </div>
+            </div>
+
+            @* "Şifremi Unuttum" sayfasına giden kısa bağlantı *@
+            <div class="auth-helper mt-2">
+                <a class="auth-forgot" href="/forgot">Şifremi Unuttum?</a>
+            </div>
+
+           
+            @if (!string.IsNullOrEmpty(Error))
+            {
+                <div class="alert alert-danger mb-2">@Error</div>
+            }
+
+            @* Giriş butonu `busy=true` iken buton kilitlenir *@
+            <button class="btn btn-primary w-100 d-inline-flex align-items-center justify-content-center gap-2"
+                    type="submit" disabled="@busy">
+                @if (busy)
+                {
+                    @*dairesel “yükleniyor” animasyonunu gösterir; spinner-border spinnerı açar, spinner-border-sm boyutunu küçültür.*@
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                }
+                <span>Giriş Yap</span>
+            </button>
+        </EditForm>
+    </div>
+</div>
+
+
+<script>
+  
+   function togglePw() {
+   
+    const inp = document.getElementById('pwBox'); //documentte id’si "pwBox" olan şifre inputunu bulur ve onu inp adlı değişkene atar.
+    const btn = document.getElementById('pwToggle');
+
+    if (!inp || !btn)
+    {
+        return; //hata çıkmaması ıcın fnk durdurur.
+    }
+
+    if (inp.type === 'password') { //türü paassword mu ?
+
+      inp.type = 'text';
+      btn.textContent = '👁️';
+      btn.setAttribute('aria-pressed', 'true'); //Buton durumu açık.
+      btn.setAttribute('title', 'Şifreyi gizle'); 
+    } 
+    else {
+      inp.type = 'password';
+      btn.textContent = '🙈';
+      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('title', 'Şifreyi göster');
+    }
+  }
+
+
+    window.ls_loginFetch = async function (payload) { //her yerden çağrılabilen ls_loginFetch adlı, payload alan ve ağ cevabını bekleyebilen (async) bir fonksiyon oluşturur.
+    try {
+        const res = await fetch('/api/auth/login',
+        { // api/auth/login adresine HTTP isteği gönderir, yanıtı bekler ve gelen yanıtı res değişkenine atar.
+        method: 'POST', //İsteğin HTTP yöntemini sunucuya veri gönderileceğini söyler.
+        headers: { 'Content-Type': 'application/json' }, // Gönderdiğim verinin JSON olduğunu belirt 
+        body: JSON.stringify(payload) // Göndereceğimiz nesneyi ({UserName, Password}) JSON metnine çevirip isteğin gövdesine koyar; sunucu bu metni alıp parse eder.
+        });
+        return res.ok === true;   // 200-299 ise true, değilse false
+    } 
+    catch 
+    {
+      return false;             
+    }
+  };
+</script>
+
+@code {
+
+    private LoginModel model = new();    //UserName ve Password yazdıkça bu model içinde saklanır
+    public string? Error { get; set; }  
+    private bool busy = false;          
+
+  
+    private async Task OnSubmit()
+    {
+        try
+        {
+            busy = true;     
+            Error = null;    // önceki hatayı temizle
+
+            if (string.IsNullOrWhiteSpace(model.UserName) || string.IsNullOrWhiteSpace(model.Password))
+            {
+                Error = "Kullanıcı adı veya şifre boş olamaz.";
+                return;
+            }
+            
+            var users = await Db.Users.AsNoTracking().ToListAsync();
+
+           
+            string Key(string s) //Key(s), kullanıcı adını normalize eder (temizler + küçültür + Türkçe’ye göre yapar).
+            {
+                if (s is null)
+                {
+                    return string.Empty;
+                }
+
+                return s.Trim().ToLower(new System.Globalization.CultureInfo("tr-TR"));
+            }
+
+
+            int a = -1; //“Henüz kullanıcıyı bulmadım” demek için başlangıç  -1
+
+            for (int i = 0; i < users.Count; i++)
+            {
+                if (Key(users[i].UserName) == Key(model.UserName)) 
+                {
+                    a = i; break; 
+                }
+            }
+            if (a == -1) 
+            { 
+                Error = "Kullanıcı bulunamadı."; return; 
+            }
+
+            // Şifreleri de boşlukları kırpıp karşılaştır
+            if (users[a].Password == null) // Veritabanındaki şifre: null ise "" yap, değilse Trim() ile kenar boşluklarını sil.
+
+            { 
+                users[a].Password = "";
+            }
+            else 
+
+            {
+                users[a].Password = users[a].Password.Trim();
+            }
+
+            if (model.Password == null) // Kullanıcının girdiği şifre: null ise "" yap, değilse Trim() ile kenar boşluklarını sil.
+            { 
+                model.Password = ""; 
+            }
+            else 
+            {
+                model.Password = model.Password.Trim(); 
+            }
+
+            if (users[a].Password != model.Password)
+            {
+                Error = "Şifre hatalı.";
+                return;
+            }
+
+
+            // giriş işleminin ne kadar sürdüğünü ölçmek için.
+            var started = DateTime.Now;
+
+            // JS’teki ls_loginFetch’i çağır: kullanıcı adı/şifreyle /api/auth/login’e POST at
+            var ok = await JS.InvokeAsync<bool>("ls_loginFetch", new {
+                UserName = model.UserName,
+                Password = model.Password
+            });
+
+            // Geçen süreyi hesapla (şimdi − başlangıç).
+            var elapsed = DateTime.Now - started;
+
+            // Eğer toplam süre 300 ms’den kısaysa…
+            if (elapsed < TimeSpan.FromMilliseconds(300))
+            {
+
+                // İstek çok hızlı biterse diye toplam süreyi en az 300 ms’e tamamla.
+                await Task.Delay(TimeSpan.FromMilliseconds(300) - elapsed);
+            }
+            
+            if (ok)
+            {
+                Nav.NavigateTo("/home", replace: true, forceLoad: true);
+            }
+
+            else
+            {
+                Error = "Giriş başarısız.";
+            }
+            
+        }
+        catch (Exception ex)
+        {
+            Error = "Giriş sırasında hata: " + ex.Message;
+        }
+        finally
+        {
+            //Ne olursa olsun, "busy" bayrağını kapat ve ekranı yenile
+            busy = false;
+            StateHasChanged();
+        }
+    }
+
+    // Formun tuttuğu değerlerin küçük modeli
+    private class LoginModel
+    {
+        public string UserName { get; set; } = string.Empty;  
+        public string Password  { get; set; } = string.Empty; 
+    }
+}

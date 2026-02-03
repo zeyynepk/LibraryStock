@@ -1,0 +1,16 @@
+# build outputs
+bin/
+obj/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# macOS
+.DS_Store
+
+# secrets
+appsettings.Development.json
+
+# user-specific
+*.csproj.user

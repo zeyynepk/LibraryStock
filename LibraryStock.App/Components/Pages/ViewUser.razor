@@ -1,0 +1,151 @@
+﻿@page "/personelgoruntule" 
+@rendermode InteractiveServer 
+@attribute [Authorize(Roles = "Admin,Personel")] 
+@using Microsoft.AspNetCore.Components.Web
+@using LibraryStock.App.Models
+@using LibraryStock.App.Clean.Services
+@inject IUsersService UsersService        
+@inject LibraryStock.App.Services.IAuthService Auth  
+
+
+<h3> 👥 Personel Görüntüleme </h3> 
+
+<div class="users-screen">
+    
+    <div class="d-flex gap-2 mb-3" style="max-width:560px;">
+        <input class="form-control"
+               @bind="query"               
+               @bind:event="oninput"     
+               @onkeydown="OnKeyDown"     
+               placeholder="Ara: Kullanıcı adı veya e-posta..." />
+        <button class="btn btn-primary" @onclick="Search">Ara</button>  @* Tıklayınca arama *@
+        <button class="btn btn-outline-secondary"
+                @onclick="Clear"
+                disabled="@string.IsNullOrWhiteSpace(query)">Temizle</button> @* Query boşsa pasif *@
+    </div>
+
+    @if (loading)
+    {
+        <p>Yükleniyor...</p>    
+    }
+    else if(items is null || items.Count == 0)
+    {
+        <p>Kayıt Bulunamadı</p> 
+    }
+    else
+    {
+        @* Veri tablosu: kullanıcı listesi *@
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th style="width:60px;">ID</th>
+                    <th style="width:140px;">Kullanıcı Adı</th>
+                    <th style="width:260px;">E-posta</th>
+                    <th style="width:100px;">Şifre</th>
+                    <th style="width:120px;">Rol</th>
+                    <th style="width:180px;">Son Giriş</th>
+                    <th style="width:140px;">Oluşturma</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach(var u in items)   @* Listedeki her kullanıcı için bir satır *@
+                {
+                    <tr>
+                        <td>@u.Id</td>
+                        <td>@u.UserName</td>
+                        <td>@u.Email</td>
+                        <td>@Mask(u?.Password)</td>  
+                        <td>
+                            @{
+                                if(u.Role==Role.Admin)
+                                {
+                                    @:Admin
+                                }
+                                else
+                                {
+                                    @:Personel
+                                }
+                            }
+                        </td>
+                        <td>@(u.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>  @* Son giriş varsa formatla, yoksa '-' *@
+                        <td>@(u.CreatedAdd.HasValue? u.CreatedAdd.Value.ToString("dd.MM.yyyy") : "-")</td> @* Oluşturma tarihi *@
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+
+@code{
+    // Kullanıcının arama kutusuna yazdığı metin
+    private string query = "";
+    private bool loading = true;
+    private List<User> items = new();
+
+    // Sayfa ilk açıldığında çalışır
+    protected override async Task OnInitializedAsync()
+    {
+        // Oturumdaki rolü öğren (Admin mi?)
+        var role = Auth.GetCurrentRole();
+        isAdmin = role.HasValue && role.Value == Role.Admin;
+
+        await Load();
+    }
+
+    // Servisten kullanıcıları çeker
+    private async Task Load()
+    {
+        loading = true; 
+
+      
+        string search = query;
+        if (search == null)
+        {
+            search = "";
+        }
+        else
+        {
+            search = search.Trim();
+        }
+
+        // Servisten listeyi iste
+        items = await UsersService.GetAsync(search);
+
+        loading = false;  
+        StateHasChanged(); // Ekranı yenile
+    }
+
+  
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if(e.Key == "Enter")
+        {
+            await Load();
+        }
+    }
+
+
+    private Task Search()
+    {
+        return Load();
+    }
+
+
+    private bool isAdmin = false;
+
+    
+    private string Mask(string? v)
+    {
+        if (string.IsNullOrEmpty(v))
+            return "";
+        return isAdmin ? v : "••••••";
+    }
+
+    private async Task Clear()
+    {
+        query = string.Empty;
+        await Load();
+    }
+}

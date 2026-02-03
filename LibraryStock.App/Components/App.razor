@@ -1,0 +1,26 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using LibraryStock.App.Clean.Components.Layout
+
+
+@* Blazor uygulamasının “ana iskeleti”.
+Kısaca: kimlik doğrulama bilgisini yayar, sayfa yönlendirmesini (routing) yapar *@
+
+@* “Kim giriş yapmış, rolü ne?” bilgisini herkese dağıtıyor. *@
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p class="p-3">Sayfa bulunamadı.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+<HeadOutlet />
+
+
+<script src="_framework/blazor.web.js"></script>

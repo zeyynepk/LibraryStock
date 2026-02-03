@@ -1,0 +1,33 @@
+﻿@inject LibraryStock.App.Services.IAuthService Auth
+@using LibraryStock.App.Models
+@using Microsoft.AspNetCore.Components.Routing
+
+@* Sol menü *@
+<nav class="side">
+
+    @* Menü maddelerinin listesi *@
+    <ul class="side-list">
+
+        @if (Auth.GetCurrentRole() == Role.Admin)
+        {
+            <li><NavLink class="side-link" href="/personelyonetim"><i class="bi bi-people"></i><span>Personel Yönetimi</span></NavLink></li>
+            <li><NavLink class="side-link" href="/personelgoruntule"><i class="bi bi-card-list"></i><span>Personel Görüntüleme</span></NavLink></li>
+            <li><NavLink class="side-link" href="/stokyonetim"><i class="bi bi-box-seam"></i><span>Stok Yönetimi</span></NavLink></li>
+            <li><NavLink class="side-link" href="/stokgoruntule"><i class="bi bi-search"></i><span>Stok Görüntüleme</span></NavLink></li>
+            <li><NavLink class="side-link" href="/siparis"><i class="bi bi-bag-plus"></i><span>Sipariş Oluşturma</span></NavLink></li>
+            <li><NavLink class="side-link" href="/siparisonay"><i class="bi bi-check2-square"></i><span>Sipariş Onaylama</span></NavLink></li>
+        }
+        else
+        {
+            <li><NavLink class="side-link" href="/personelgoruntule"><i class="bi bi-card-list"></i><span>Personel Görüntüleme</span></NavLink></li>
+            <li><NavLink class="side-link" href="/stokgoruntule"><i class="bi bi-search"></i><span>Stok Görüntüleme</span></NavLink></li>
+            <li><NavLink class="side-link" href="/siparis"><i class="bi bi-bag-plus"></i><span>Sipariş Oluşturma</span></NavLink></li>
+        }
+
+        @* İnce bir ayırıcı çizgi *@
+        <li class="side-sep"></li>
+
+        @* Çıkış bağlantısı (hesaptan çık) *@
+        <li><a class="side-link" href="/logout"><i class="bi bi-box-arrow-right"></i><span>Çıkış</span></a></li>
+    </ul>
+</nav>

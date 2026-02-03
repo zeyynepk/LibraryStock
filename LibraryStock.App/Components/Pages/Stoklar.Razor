@@ -1,0 +1,243 @@
+﻿@page "/stokyonetim"                     
+@rendermode InteractiveServer            
+@attribute [Authorize(Roles = "Admin")]  
+
+@using Microsoft.AspNetCore.Components.Web
+@using LibraryStock.App.Models
+@using LibraryStock.App.Clean.Services
+@inject IStokService StokService        
+
+<h3>📦 Stok Yönetimi</h3> 
+
+<div class="users-screen">
+    
+    <div class="input-group mb-3" style="max-width:620px;">
+        <button class="btn btn-primary" @onclick="NewItem">+ Yeni Stok</button> @* Tıkla → form açılır *@
+    </div>
+
+    
+    @if (loading)
+    {
+        <p>Yükleniyor…</p>
+    }
+
+    else if (items is null || items.Count == 0)
+    {
+        <p>Kayıt bulunamadı.</p>
+    }
+    @* Kayıtlar varsa tabloyu göster *@
+    else
+    {
+        <table class="table table-hover table-sm">
+            <thead>
+                <tr>
+                    <th style="width:80px;">ID</th>
+                    <th>Ürün</th>
+                    <th style="width:110px;">Adet</th>
+                    <th style="width:120px;">Min. Seviye</th>
+                    <th style="width:120px;">CategoryID</th>
+                    <th style="width:140px;">OluşturanUserID</th>
+                    <th style="width:180px;">Eklenme</th>
+                    <th style="width:180px;">Güncelleme</th>
+                    <th class="text-end" style="width:220px;">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in items)   @* Her stok için satır *@
+                {
+                    <tr>
+                        <td>@s.Id</td>
+                        <td>
+                            @s.ItemName
+                            @if ((s.MinValue > 0) && s.Quantity < s.MinValue)
+                            {
+                                <span class="badge low ms-2">Kritik</span>
+                            }
+                        </td>
+                        <td>@s.Quantity</td>
+                        <td>@s.MinValue</td>
+                        <td>@s.CategoryID</td>
+                        <td>@s.OlusturanUserID</td>
+                        <td>@string.Format("{0:dd.MM.yyyy HH:mm}", s.AddedDate)</td>
+                        <td>@((s.UpdatedAt ?? s.AddedDate).ToString("dd.MM.yyyy HH:mm"))</td>
+                        <td class="text-end">
+                            @* Düzenle: mevcut stok bilgisi formda açılır *@
+                            <button class="btn btn-sm btn-outline-primary me-2" @onclick="@(() => EditItem(s))">Düzenle</button>
+                            @* Sil: önce emin misin penceresi açılır *@
+                            <button class="btn btn-sm btn-outline-danger" @onclick="@(() => AskDelete(s))">Sil</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @* Ekle/Düzenle formu için üstten binen (overlay) pencere *@
+    @if (showForm)
+    {
+        <div style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+            <div style="max-width:720px; margin:6rem auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.2)">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid #eee">
+                    <strong>@formTitle</strong>  @* "Yeni Stok" veya "Stok Düzenle" *@
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CloseForm">Kapat</button>
+                </div>
+
+                <div class="p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ürün Adı</label>
+                            <input class="form-control" @bind="model.ItemName" /> 
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Adet</label>
+                            <input class="form-control" type="number" @bind="model.Quantity" /> 
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Min. Seviye</label>
+                            <input class="form-control" type="number" @bind="model.MinValue" /> 
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Kategori ID</label>
+                            <input class="form-control" type="number" @bind="model.CategoryID" /> 
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-success" @onclick="Save">Kaydet</button>   
+                        <button class="btn btn-secondary" @onclick="CloseForm">Vazgeç</button> 
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Silme onayı için ufak overlay *@
+    @if (showDelete)
+    {
+        <div style="position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999;">
+            <div style="max-width:520px; margin:8rem auto; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.2)">
+                <div class="p-3">
+                    <p class="mb-3"><strong>@deleteTarget?.ItemName</strong> kaydını silmek istiyor musun?</p>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-danger" @onclick="DeleteConfirmed">Evet, Sil</button>  
+                        <button class="btn btn-secondary" @onclick="CloseDelete">Vazgeç</button> 
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool loading = true;              
+    private List<Stok> items = new();         
+    private bool showForm = false;            
+    private string formTitle = "Yeni Stok";   
+    private Stok model = new();               // Formda düzenlenen stok modeli
+    private bool showDelete = false;          
+    private Stok? deleteTarget;               // Silinecek hedef stok
+
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        loading = true;
+        items = await StokService.GetAsync(null); // Şimdilik arama yok tümünü çek
+        loading = false;
+        StateHasChanged(); // Ekranı yenile
+    }
+
+    // "Yeni Stok" butonuna basınca: boş bir model hazırla ve formu aç
+    private void NewItem()
+    {
+        model = new Stok
+        {
+            ItemName = string.Empty,
+            Quantity = 0,
+            MinValue = 0,
+            CategoryID = 0,
+            AddedDate = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        };
+        formTitle = "Yeni Stok";
+        showForm = true;
+    }
+
+    // "Düzenle" butonuna basınca: seçilen kaydın değerlerini forma kopyala
+    private void EditItem(Stok s)
+    {
+        model = new Stok
+        {
+            Id = s.Id,
+            ItemName = s.ItemName,
+            Quantity = s.Quantity,
+            MinValue = s.MinValue,
+            CategoryID = s.CategoryID,
+            OlusturanUserID = s.OlusturanUserID,
+            AddedDate = s.AddedDate,
+            UpdatedAt = DateTime.Now
+        };
+        formTitle = "Stok Düzenle";
+        showForm = true;
+    }
+
+    // Formu kapat (değişiklikleri kaydetmeden)
+    private void CloseForm() => showForm = false;
+
+    // Formdaki "Kaydet" butonu: yeni ise ekle, değilse güncelle; sonra listeyi yenile
+    private async Task Save()
+    {
+        
+        if (string.IsNullOrWhiteSpace(model.ItemName))
+            return;
+
+        if (model.Id == 0)
+        {
+            if (model.AddedDate == default) model.AddedDate = DateTime.Now;
+            if (!model.UpdatedAt.HasValue) model.UpdatedAt = model.AddedDate;
+
+            await StokService.AddAsync(model);
+        }
+        else
+        {
+            // Mevcut kaydı güncelle
+            model.UpdatedAt = DateTime.Now;
+            await StokService.UpdateAsync(model);
+        }
+
+        showForm = false; 
+        await Load();       
+    }
+
+    // "Sil" butonu: önce onay penceresini aç
+    private void AskDelete(Stok s)
+    {
+        deleteTarget = s;
+        showDelete = true;
+    }
+
+    // Silme: penceresini kapat (iptal)
+    private void CloseDelete()
+    {
+        showDelete = false;
+        deleteTarget = null;
+    }
+
+    // "Evet, Sil" : gerçekten sil ve listeyi yenile
+    private async Task DeleteConfirmed()
+    {
+        if (deleteTarget != null)
+            await StokService.DeleteAsync(deleteTarget.Id);
+
+        showDelete = false;
+        deleteTarget = null;
+        await Load();
+    }
+}

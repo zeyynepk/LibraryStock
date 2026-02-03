@@ -1,0 +1,105 @@
+﻿@using LibraryStock.App.Models
+@inject LibraryStock.App.Services.IAuthService Auth
+
+<tr>
+    <td>@GetId(Item)</td>
+    <td>@Safe(Item?.UserName)</td>
+    <td>@Safe(Item?.Email)</td>
+    <td>@Mask(Item?.Password)</td>
+    <td>@GetRoleId(Item)</td>
+    <td>@GetRoleText(Item)</td>
+    <td>@Fmt(Item?.LastLoginDate)</td>
+    <td>@Fmt(Item?.CreatedAdd)</td>
+    <td class="text-end">
+        <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="OnEditClick">Düzenle</button>
+        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="OnDeleteClick">Sil</button>
+    </td>
+</tr>
+
+@code {
+    // [parameter] :Bu bileşene dışarıdan bir kullanıcı bilgisi gönderilir
+    [Parameter] public User Item { get; set; } //Item, o satırda gösterilen kişi.
+    [Parameter] public bool ShowPlainPassword { get; set; }
+
+    //  Bu bileşen dışarıya (ebeveyne) haber gönderebilir:
+    // “Düzenle butonuna basıldı” ve yanında kullanıcı bilgisini yollar
+    [Parameter] public EventCallback<User> OnEdit { get; set; }
+    [Parameter] public EventCallback<User> OnDelete { get; set; }
+
+
+    private async Task OnEditClick()
+    {
+        // Eğer dışarıya haber gönderecek bir bağlantı varsa (delegate tanımlıysa)
+        if (OnEdit.HasDelegate && Item != null)
+        {
+            // Kullanıcı bilgisini haber olarak gönder
+            await OnEdit.InvokeAsync(Item);
+        }
+    }
+
+
+    private async Task OnDeleteClick()
+    {
+        if (OnDelete.HasDelegate && Item != null)
+        {
+            await OnDelete.InvokeAsync(Item);
+        }
+    }
+
+    // Güvenli şekilde string döndürür (boşsa "" yapar)
+    private string Safe(string v)
+    {
+        if (string.IsNullOrEmpty(v)) return "";
+        return v;
+    }
+
+
+    private string Mask(string v)
+    {
+        if (string.IsNullOrEmpty(v))
+        {
+            return "";
+        }
+        if (ShowPlainPassword)   // dışarıdan gelen parametre: Admin mi değil mi?
+        {
+            return v; // şifreyi göster
+        }
+        return "••••••"; 
+    }
+
+    // Kullanıcının rolünü yazı olarak döndürür (Admin/Personel)
+    private string GetRoleText(User u)
+    {
+        if (u == null) return "";
+        return u.Role.ToString();
+    }
+
+    // Kullanıcının rolünü sayıya çevirir (örn. 1 = Admin, 2 = Personel)
+    private string GetRoleId(User u)
+    {
+        if (u == null) return "";
+        int id = (int)u.Role;
+        return id.ToString();
+    }
+
+    // Tarih varsa formatlı şekilde döndürür, yoksa boş döner
+    private string Fmt(DateTime? dt)
+    {
+        if (dt.HasValue)
+        {
+            return dt.Value.ToString("yyyy-MM-dd HH:mm");
+        }
+        else
+        {
+          return "";
+        }
+    }
+
+    // Kullanıcının ID’sini string olarak döndürür
+    private string GetId(User u)
+    {
+        if (u == null) return "";
+        return u.Id.ToString();
+    }
+}
+

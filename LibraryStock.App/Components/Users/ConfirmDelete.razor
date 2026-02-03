@@ -1,0 +1,77 @@
+﻿@* @using LibraryStock.App.Models
+@inject LibraryStock.App.Clean.Services.IUsersService UsersService
+
+@if (Visible && User != null)
+{
+    <div class="card mt-3 border-danger">
+        <div class="card-header text-danger">
+            <strong>Silme Onayı</strong>
+        </div>
+        <div class="card-body">
+            <p>
+                <strong>@Safe(User.UserName)</strong> adlı personeli silmek istediğinize emin misiniz?
+            </p>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger py-2">@error</div>
+            }
+
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-danger" @onclick="ConfirmAsync">Evet, Sil</button>
+                <button type="button" class="btn btn-secondary" @onclick="CancelAsync">Vazgeç</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public User User { get; set; }
+
+    // sayfaya haber vermek için event’ler
+    [Parameter] public EventCallback OnConfirmed { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string error = "";
+
+    private string Safe(string v)
+    {
+        if (string.IsNullOrEmpty(v)) return "";
+        return v;
+    }
+
+    private async Task ConfirmAsync()
+    {
+        error = "";
+
+        if (User == null)
+        {
+            error = "Kayıt bulunamadı.";
+            return;
+        }
+
+        // DB’den sil
+        bool ok = await UsersService.DeleteAsync(User.Id);
+        if (!ok)
+        {
+            error = "Silme başarısız.";
+            return;
+        }
+
+        // ebeveyne bildir
+        if (OnConfirmed.HasDelegate)
+        {
+            await OnConfirmed.InvokeAsync(null);
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync(null);
+        }
+    }
+}
+ *@
