@@ -120,6 +120,7 @@ http://localhost:5100
 - Models/ → Database models
 - Data/ → DbContext and EF Core configuration
 
+![Library Stock Uygulaması](LibraryStock.App/screenshots/librarystock.jpeg)
 
 ## 👩‍💻 Developer
 
