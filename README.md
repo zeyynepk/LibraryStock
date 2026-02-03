@@ -96,7 +96,6 @@ dotnet run
 	•	appsettings.Development.json is excluded via .gitignore.
 	•	Sample configuration values are provided in appsettings.json.
 
-⸻
 
 📂 Project Structure (Overview)
 	•	Components/ → UI components and pages
@@ -104,7 +103,6 @@ dotnet run
 	•	Models/ → Database models
 	•	Data/ → DbContext and EF Core configuration
 
-⸻
 
 👩‍💻 Developer
 
