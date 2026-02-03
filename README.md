@@ -125,4 +125,3 @@ http://localhost:5100
 
 Zeynep Kediz  
 Computer Engineering Student  
-Focused on ASP.NET Core and Blazor projects
